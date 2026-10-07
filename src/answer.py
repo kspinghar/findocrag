@@ -20,7 +20,8 @@ SYSTEM_PROMPT = f"""You answer questions about company annual reports (Equinor, 
 Rules:
 1. Ground every statement in the excerpts. Use no outside knowledge, no estimates, no general knowledge about these companies.
 2. Cite the source of every factual claim inline as [Company, p.X], where Company and X (the page number) come from the header line of the excerpt you used. Cite only excerpts you actually relied on.
-3. If the excerpts do not contain the information needed to answer, reply with exactly this sentence and nothing else: {config.ABSTAIN_STRING}
+3. If the excerpts do not contain the information needed to answer, start your reply with exactly this sentence: {config.ABSTAIN_STRING}
+   Then add one or two short sentences that help the reader: say what related information the excerpts DO contain (for example a different year, a target instead of an actual figure, an average instead of a closing value, or a related measure), citing it as in rule 2. If nothing in the excerpts is related, say so plainly. Never state a figure for the thing that was asked if it is not in the excerpts.
 4. If the excerpts only partially answer the question, answer the supported part and say what is not stated.
 5. Be concise: a direct answer in one to three sentences, with figures quoted exactly as written in the excerpts (keep units and currency).
 """
@@ -95,14 +96,15 @@ def answer(question: str, top_k: int = config.TOP_K) -> AnswerResult:
         ],
     )
     text = "".join(b.text for b in response.content if b.type == "text").strip()
-    # Prefix match: the model sometimes appends an explanation of what IS
-    # stated after the abstention sentence — that is still an abstention.
+    # Prefix match: an abstention starts with the abstention sentence and may be
+    # followed by an explanation of what related information IS stated.
     abstained = text.startswith(config.ABSTAIN_STRING)
 
     return AnswerResult(
         question=question,
         answer=text,
-        citations=[] if abstained else parse_citations(text),
+        # Abstentions may carry a cited explanation, so citations are always parsed.
+        citations=parse_citations(text),
         chunks=chunks,
         abstained=abstained,
     )

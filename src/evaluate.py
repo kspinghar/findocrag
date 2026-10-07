@@ -247,7 +247,10 @@ def evaluate_item(item: dict[str, Any]) -> ItemResult:
         out.correctness = 0.0
         out.correctness_reason = "System abstained on an answerable question."
 
-    if not res.abstained:
+    # Judge answers, and also abstentions that carry an explanation, so a
+    # hallucinated explanation is caught just like a hallucinated answer.
+    has_text = res.answer.strip() != config.ABSTAIN_STRING
+    if not res.abstained or has_text:
         context = "\n\n".join(
             f"[{c.company}, p.{c.page}] {c.text}" for c in res.chunks
         )
@@ -323,7 +326,7 @@ def write_report(results: list[ItemResult], summary: dict[str, Any], qa_path: Pa
     lines.append(f"| Correctness (LLM judge, answerable) | {_fmt(summary['correctness_mean'])} | "
                  f"{summary['correctness_full']} full / {summary['correctness_partial']} partial / "
                  f"{summary['correctness_zero']} wrong |")
-    lines.append(f"| Groundedness (LLM judge, non-abstained) | {_fmt(summary['groundedness_mean'])} | "
+    lines.append(f"| Groundedness (LLM judge, answers + abstention explanations) | {_fmt(summary['groundedness_mean'])} | "
                  f"share of claims supported by retrieved context |")
     lines.append(f"| Citation validity (programmatic) | {_fmt(summary['citation_validity'])} | "
                  f"{summary['citations_resolvable']}/{summary['citations_total']} citations resolve "
