@@ -1,0 +1,13 @@
+.env
+.venv/
+__pycache__/
+*.pyc
+data/index/
+eval/.cache/
+# Large source PDFs are documented in the README, not committed.
+data/reports/*.pdf
+.pytest_cache/
+
+# Local tool settings and large review artefacts
+.claude/
+eval/FinDocRAG_answer_key_check.pdf
