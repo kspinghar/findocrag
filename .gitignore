@@ -11,3 +11,4 @@ data/reports/*.pdf
 # Local tool settings and large review artefacts
 .claude/
 eval/FinDocRAG_answer_key_check.pdf
+eval/FinDocRAG_heldout_check.pdf
