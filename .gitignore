@@ -2,7 +2,7 @@
 .venv/
 __pycache__/
 *.pyc
-data/index/
+# data/index/ is committed so the app and eval run without the PDFs
 eval/.cache/
 # Large source PDFs are documented in the README, not committed.
 data/reports/*.pdf
@@ -12,3 +12,4 @@ data/reports/*.pdf
 .claude/
 eval/FinDocRAG_answer_key_check.pdf
 eval/FinDocRAG_heldout_check.pdf
+CLAUDE_CODE_NEXT_PHASES.md
