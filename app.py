@@ -4,15 +4,50 @@ Run locally with:  python app.py
 """
 from __future__ import annotations
 
+import datetime as _dt
 import html
+import os
 import re
+import threading
 from pathlib import Path
 
 import gradio as gr
 
 import config
 
+# Hosting note. The public demo runs on Hugging Face ZeroGPU hardware, the free option
+# for Gradio Spaces. ZeroGPU refuses to start an app that has no @spaces.GPU function.
+# This app only uses the CPU, so the placeholder below is never called and uses no GPU
+# time. Locally the `spaces` package is not installed.
+try:
+    import spaces
+except ImportError:
+    spaces = None
+
+if spaces is not None:
+
+    @spaces.GPU
+    def _zerogpu_placeholder() -> None:
+        return None
+
+
+GITHUB_URL = "https://github.com/kspinghar/findocrag"
 MAX_QUESTION_CHARS = 400
+# Every question costs two API calls (rerank + answer), so the public demo has a daily cap.
+MAX_QUESTIONS_PER_DAY = int(os.environ.get("MAX_QUESTIONS_PER_DAY", "300"))
+_usage = {"day": None, "count": 0}
+_usage_lock = threading.Lock()
+
+
+def _take_quota() -> bool:
+    today = _dt.date.today()
+    with _usage_lock:
+        if _usage["day"] != today:
+            _usage["day"], _usage["count"] = today, 0
+        if _usage["count"] >= MAX_QUESTIONS_PER_DAY:
+            return False
+        _usage["count"] += 1
+        return True
 
 EXAMPLES = [
     "What was Equinor's adjusted operating income in 2025?",
@@ -66,6 +101,9 @@ def ask(question: str):
         return "<p>Type a question about the 2025 annual reports of Equinor, DNB or Hydro.</p>", ""
     if len(question) > MAX_QUESTION_CHARS:
         return f"<p>Please keep the question under {MAX_QUESTION_CHARS} characters.</p>", ""
+    if not _take_quota():
+        return ("<p>The demo has reached its daily question limit. Please try again tomorrow, "
+                f'or run it yourself from <a href="{GITHUB_URL}">GitHub</a>.</p>'), ""
     try:
         from src.answer import answer
         result = answer(question)
@@ -136,7 +174,8 @@ def build_app() -> gr.Blocks:
             "# FinDocRAG\n"
             "Ask questions about the **2025 annual reports of Equinor, DNB and Norsk Hydro**. "
             "Every answer cites the report page it comes from. When the reports do not contain the answer, "
-            "the system says so and explains what related information they do contain."
+            "the system says so and explains what related information they do contain. "
+            f"[Code, method and full evaluation on GitHub]({GITHUB_URL})."
         )
         with gr.Tab("Ask"):
             question = gr.Textbox(label="Your question", placeholder="e.g. What was Hydro's net debt at the end of 2025?",
