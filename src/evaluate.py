@@ -328,7 +328,8 @@ def _fmt(x: float | None, pct: bool = True) -> str:
     return f"{x:.1%}" if pct else f"{x:.3f}"
 
 
-def write_report(results: list[ItemResult], summary: dict[str, Any], qa_path: Path) -> None:
+def write_report(results: list[ItemResult], summary: dict[str, Any], qa_path: Path,
+                 out_path: Path = config.EVAL_REPORT_PATH) -> None:
     lines: list[str] = []
     lines.append("# FinDocRAG evaluation report\n")
     lines.append(f"- QA set: `{qa_path.name}` — {summary['n_items']} items "
@@ -397,7 +398,7 @@ def write_report(results: list[ItemResult], summary: dict[str, Any], qa_path: Pa
     lines.append("- Statements of absence (\"X is not stated\") are not counted as claims by the groundedness judge.")
     lines.append("- All LLM calls are cached in `eval/.cache/`; delete it to force a fresh run.")
 
-    config.EVAL_REPORT_PATH.write_text("\n".join(lines), encoding="utf-8")
+    out_path.write_text("\n".join(lines), encoding="utf-8")
 
 
 def main() -> None:
@@ -405,6 +406,8 @@ def main() -> None:
     parser.add_argument("--qa-set", type=Path, default=config.QA_SET_PATH)
     parser.add_argument("--allow-unverified", action="store_true",
                         help="Evaluate items not yet human-verified (dry runs only).")
+    parser.add_argument("--report", type=Path, default=config.EVAL_REPORT_PATH,
+                        help="Where to write the markdown report (e.g. eval/report_heldout.md).")
     args = parser.parse_args()
 
     items = load_qa_set(args.qa_set, allow_unverified=args.allow_unverified)
@@ -415,15 +418,15 @@ def main() -> None:
         r = evaluate_item(item)
         results.append(r)
         tag = "ABSTAIN" if r.abstained else f"corr={r.correctness if r.correctness is not None else '-'}"
-        print(f"  [{i:2d}/{len(items)}] id={item['id']:2d} {item['type']:12s} {tag}")
+        print(f"  [{i:2d}/{len(items)}] id={item['id']:3d} {item['type']:12s} {tag}")
 
     summary = compute_summary(results)
-    write_report(results, summary, args.qa_set)
+    write_report(results, summary, args.qa_set, args.report)
 
     print("\n--- Summary ---")
     for k, v in summary.items():
         print(f"  {k}: {v}")
-    print(f"\nReport written to {config.EVAL_REPORT_PATH}")
+    print(f"\nReport written to {args.report}")
 
 
 if __name__ == "__main__":
