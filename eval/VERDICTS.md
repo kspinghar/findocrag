@@ -9,3 +9,7 @@ The 40 draft questions in `qa_candidates.jsonl` were checked by Khalid Spinghar 
 | DROP | 3 (Equinor Q4 dividend: the comparison figure in the draft could not be found in the report) |
 
 Result: 39 items, 29 answerable and 10 unanswerable. Original ids are kept so this record, the worksheet and the reports cross-reference.
+
+## Post-baseline key correction (8 October 2026)
+
+- **Q29 (Hydro alumina production).** The baseline marked the system's answer of 6.1 million tonnes as wrong. Checking the report showed that 6.1 million tonnes is stated on p.14 (Bauxite & Alumina business area overview), while the key's 5,458 thousand tonnes comes from the sustainability statement table on p.256. The report gives two figures on different bases, so the key was too narrow. Approved by Khalid Spinghar: the reference now accepts either figure and lists both pages. This was an error in the key, not a change to the system. `report_baseline.md` is left as it was.
