@@ -1,11 +1,13 @@
-# Pinned versions are set in Phase 5 before deploy; ranges keep local dev simple.
-pypdf>=4.0
-pdfplumber>=0.11
-sentence-transformers>=3.0
-faiss-cpu>=1.8
-anthropic>=0.40
-gradio>=4.44
-python-dotenv>=1.0
-numpy>=1.26
+# Pinned to the versions the evaluation results were produced with.
+anthropic==0.120.2
+sentence-transformers==5.7.0
+transformers==5.14.1
+torch==2.13.0
+faiss-cpu==1.15.0
+rank-bm25==0.2.2
+numpy==2.2.6
+pypdf==6.15.0
+pdfplumber==0.11.10
+python-dotenv==1.2.2
+gradio==6.22.0
 pytest>=8.0
-rank-bm25>=0.2
