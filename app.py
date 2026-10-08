@@ -61,14 +61,15 @@ EXAMPLES = [
 ]
 
 CSS = """
+/* Mid-tone colours on translucent backgrounds read well in both light and dark mode. */
 .badge {display:inline-block;padding:4px 10px;border-radius:999px;font-weight:600;font-size:0.9em;margin-bottom:8px}
-.badge-ok {background:#e6f4ea;color:#1e5631}
-.badge-abstain {background:#fff4d6;color:#7a5200}
+.badge-ok {background:rgba(46,160,67,0.18) !important;color:#2ea043 !important}
+.badge-abstain {background:rgba(210,153,34,0.20) !important;color:#d29922 !important}
 .answer {font-size:1.05em;line-height:1.55}
-.cite {background:#eef3fb;color:#1F4E79;border-radius:4px;padding:0 4px;font-size:0.9em;white-space:nowrap}
-.chunk {border:1px solid #ddd;border-radius:8px;padding:10px 12px;margin:8px 0;font-size:0.9em}
-.chunk-head {font-weight:600;color:#1F4E79;margin-bottom:4px}
-.chunk-cited {border-color:#1F4E79;border-width:2px}
+.cite {background:rgba(56,139,253,0.16) !important;color:#4493f8 !important;border-radius:4px;padding:0 4px;font-size:0.9em;white-space:nowrap}
+.chunk {border:1px solid rgba(128,128,128,0.35);border-radius:8px;padding:10px 12px;margin:8px 0;font-size:0.9em}
+.chunk-head {font-weight:600;color:#4493f8 !important;margin-bottom:4px}
+.chunk-cited {border-color:#4493f8;border-width:2px}
 """
 
 
