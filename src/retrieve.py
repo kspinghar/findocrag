@@ -91,7 +91,9 @@ class Retriever:
         from sentence_transformers import SentenceTransformer
 
         self.bm25 = BM25Okapi([tokenize(c["text"]) for c in self.chunks])
-        self.model = SentenceTransformer(config.EMBEDDING_MODEL)
+        # Always embed on CPU. The model is small, and on Hugging Face ZeroGPU the main
+        # process must not initialise CUDA (it raises RuntimeError if it does).
+        self.model = SentenceTransformer(config.EMBEDDING_MODEL, device="cpu")
 
     # --- rankings -------------------------------------------------------------
     def _mask(self, query: str) -> np.ndarray:

@@ -6,6 +6,7 @@ from __future__ import annotations
 
 import datetime as _dt
 import html
+import logging
 import os
 import re
 import threading
@@ -109,8 +110,10 @@ def ask(question: str):
         result = answer(question)
     except FileNotFoundError:
         return "<p>The search index is missing. Run <code>python -m src.ingest</code> first.</p>", ""
-    except Exception as exc:  # surface API/config problems instead of a traceback
-        return f"<p>Something went wrong: {html.escape(type(exc).__name__)}. Check the API key and try again.</p>", ""
+    except Exception as exc:  # show a short message in the UI; full traceback goes to the logs
+        logging.exception("Question failed: %s", question)
+        hint = " Check the API key." if "auth" in type(exc).__name__.lower() or "api_key" in str(exc).lower() else ""
+        return f"<p>Something went wrong ({html.escape(type(exc).__name__)}).{hint} Please try again.</p>", ""
     cited = {(c.company, c.page) for c in result.citations}
     return _render_answer(result.answer, result.abstained), _render_chunks(result.chunks, cited)
 
