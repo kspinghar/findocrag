@@ -80,7 +80,7 @@ class Retriever:
         chunks_path = config.INDEX_DIR / "chunks.jsonl"
         if not index_path.exists() or not chunks_path.exists():
             raise FileNotFoundError(
-                "Index not found — run `python -m src.ingest` first."
+                "Index not found. Run `python -m src.ingest` first."
             )
         self.index = faiss.read_index(str(index_path))
         with open(chunks_path, encoding="utf-8") as f:

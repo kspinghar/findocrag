@@ -332,7 +332,7 @@ def write_report(results: list[ItemResult], summary: dict[str, Any], qa_path: Pa
                  out_path: Path = config.EVAL_REPORT_PATH) -> None:
     lines: list[str] = []
     lines.append("# FinDocRAG evaluation report\n")
-    lines.append(f"- QA set: `{qa_path.name}` — {summary['n_items']} items "
+    lines.append(f"- QA set: `{qa_path.name}`: {summary['n_items']} items "
                  f"({summary['n_answerable']} answerable, {summary['n_unanswerable']} unanswerable)")
     lines.append(f"- Answer model: `{config.ANSWER_MODEL}` | Judge model: `{config.JUDGE_MODEL}`")
     lines.append(f"- Retrieval: `{config.RETRIEVAL_MODE}`"
@@ -370,7 +370,7 @@ def write_report(results: list[ItemResult], summary: dict[str, Any], qa_path: Pa
     ]
     lines.append("## Failure cases\n")
     if not failures:
-        lines.append("None — every item scored full marks on every metric.\n")
+        lines.append("None. Every item scored full marks on every metric.\n")
     else:
         lines.append("| # | Type | Question | Issue |")
         lines.append("|---|---|---|---|")
@@ -393,7 +393,7 @@ def write_report(results: list[ItemResult], summary: dict[str, Any], qa_path: Pa
     lines.append("- Correctness and groundedness use an LLM judge "
                  f"(`{config.JUDGE_MODEL}`, temperature 0, structured JSON output).")
     lines.append("- Citation validity and figure support are purely programmatic checks "
-                 "against the chunk page metadata — no model involved.")
+                 "against the chunk page metadata, with no model involved.")
     lines.append("- Abstention is detected when the answer starts with the configured abstention sentence; any explanation after it is judged for groundedness and its citations are checked like any other answer.")
     lines.append("- Statements of absence (\"X is not stated\") are not counted as claims by the groundedness judge.")
     lines.append("- All LLM calls are cached in `eval/.cache/`; delete it to force a fresh run.")

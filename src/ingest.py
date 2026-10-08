@@ -3,7 +3,7 @@
 Run with:  python -m src.ingest
 
 Chunks are built within page boundaries so every chunk maps to exactly one
-page — this keeps citations exact and makes the eval's citation-validity
+page. This keeps citations exact and makes the eval's citation-validity
 check programmatic. Pages longer than CHUNK_SIZE_TOKENS are split with a
 sliding window of CHUNK_OVERLAP_TOKENS overlap.
 """

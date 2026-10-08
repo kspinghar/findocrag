@@ -1,6 +1,6 @@
 # FinDocRAG evaluation report
 
-- QA set: `qa_set.jsonl` — 39 items (29 answerable, 10 unanswerable)
+- QA set: `qa_set.jsonl`: 39 items (29 answerable, 10 unanswerable)
 - Answer model: `claude-haiku-4-5` | Judge model: `claude-haiku-4-5`
 - Embeddings: `BAAI/bge-small-en-v1.5` | top_k=6 | chunks: 800/100 tokens
 
@@ -30,7 +30,7 @@
 ## Method notes
 
 - Correctness and groundedness use an LLM judge (`claude-haiku-4-5`, temperature 0, structured JSON output).
-- Citation validity and figure support are purely programmatic checks against the chunk page metadata — no model involved.
+- Citation validity and figure support are purely programmatic checks against the chunk page metadata, with no model involved.
 - Abstention is detected when the answer starts with the configured abstention sentence; any explanation after it is judged for groundedness and its citations are checked like any other answer.
 - Statements of absence ("X is not stated") are not counted as claims by the groundedness judge.
 - All LLM calls are cached in `eval/.cache/`; delete it to force a fresh run.

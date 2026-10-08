@@ -66,12 +66,12 @@ No further tuning was done against either question set.
 ## Architecture
 
 ```
-PDFs ─ pypdf parse ─ 800-token chunks with page metadata (1,377 chunks)
-                         ├─ bge-small-en-v1.5 embeddings ─ FAISS
-                         └─ BM25 keyword index
-question ─ company filter ─ dense + BM25 rankings ─ RRF fusion ─ top 30
-         ─ LLM rerank ─ top 8 passages ─ Claude answer with [Company, p.X] citations
-                                        (or abstain + cited explanation)
+PDFs -> pypdf parse -> 800-token chunks with page metadata (1,377 chunks)
+                       |-> bge-small-en-v1.5 embeddings -> FAISS
+                       |-> BM25 keyword index
+question -> company filter -> dense + BM25 rankings -> RRF fusion -> top 30
+         -> LLM rerank -> top 8 passages -> Claude answer with [Company, p.X] citations
+                                             (or abstain + cited explanation)
 ```
 
 - Embeddings: local `BAAI/bge-small-en-v1.5` (no embedding API)
