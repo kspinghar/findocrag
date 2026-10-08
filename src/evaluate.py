@@ -97,6 +97,7 @@ class ItemResult:
     unsupported_claims: list[str] = field(default_factory=list)
     citations_total: int = 0
     citations_resolvable: int = 0
+    retrieval_hit: bool | None = None  # expected page among retrieved chunks (answerable only)
     figure_supported: bool | None = None
     abstain_expected: bool = False
     abstained: bool = False
@@ -198,7 +199,9 @@ def evaluate_item(item: dict[str, Any]) -> ItemResult:
     question = item["question"]
     from src.answer import SYSTEM_PROMPT
     # The answer prompt is part of the key so prompt changes always produce fresh answers.
-    key = _cache_key(config.ANSWER_MODEL, str(config.TOP_K), SYSTEM_PROMPT, question)
+    from src.retrieve import RERANK_PROMPT
+    retrieval_cfg = f"{config.RETRIEVAL_MODE}|{config.FILTER_BY_COMPANY}|{config.RERANK}|{config.RERANK_CANDIDATES}|{RERANK_PROMPT if config.RERANK else ''}"
+    key = _cache_key(config.ANSWER_MODEL, str(config.TOP_K), retrieval_cfg, SYSTEM_PROMPT, question)
 
     def _run() -> dict[str, Any]:
         r = answer(question)
@@ -233,6 +236,11 @@ def evaluate_item(item: dict[str, Any]) -> ItemResult:
     out = ItemResult(item=item, result=res,
                      abstain_expected=item["type"] == "unanswerable",
                      abstained=res.abstained)
+
+    if item["type"] == "answerable":
+        expected = {(s["company"], p) for s in item.get("expected_sources", []) for p in s["pages"]}
+        retrieved = {(c.company, c.page) for c in res.chunks}
+        out.retrieval_hit = bool(expected & retrieved) if expected else None
 
     if item["type"] == "answerable" and not res.abstained:
         cj = cached_json_call(
@@ -309,6 +317,8 @@ def compute_summary(results: list[ItemResult]) -> dict[str, Any]:
         "abstention_recall": true_abstain / len(unanswerable) if unanswerable else None,
         "abstention_precision": true_abstain / all_abstain if all_abstain else None,
         "false_abstentions": false_abstain,
+        "retrieval_hit_rate": (sum(1 for r in answerable if r.retrieval_hit) / len([r for r in answerable if r.retrieval_hit is not None])) if any(r.retrieval_hit is not None for r in answerable) else None,
+        "retrieval_hits": sum(1 for r in answerable if r.retrieval_hit),
     }
 
 
@@ -324,12 +334,17 @@ def write_report(results: list[ItemResult], summary: dict[str, Any], qa_path: Pa
     lines.append(f"- QA set: `{qa_path.name}` — {summary['n_items']} items "
                  f"({summary['n_answerable']} answerable, {summary['n_unanswerable']} unanswerable)")
     lines.append(f"- Answer model: `{config.ANSWER_MODEL}` | Judge model: `{config.JUDGE_MODEL}`")
+    lines.append(f"- Retrieval: `{config.RETRIEVAL_MODE}`"
+                 + (f", company filter" if config.FILTER_BY_COMPANY else "")
+                 + (f", LLM rerank of top {config.RERANK_CANDIDATES} candidates (`{config.RERANK_MODEL}`)" if config.RERANK and config.RETRIEVAL_MODE == "hybrid" else ""))
     lines.append(f"- Embeddings: `{config.EMBEDDING_MODEL}` | top_k={config.TOP_K} | "
                  f"chunks: {config.CHUNK_SIZE_TOKENS}/{config.CHUNK_OVERLAP_TOKENS} tokens\n")
 
     lines.append("## Scorecard\n")
     lines.append("| Metric | Score | Notes |")
     lines.append("|---|---|---|")
+    lines.append(f"| Retrieval hit rate (programmatic, answerable) | {_fmt(summary['retrieval_hit_rate'])} | "
+                 f"{summary['retrieval_hits']}/{summary['n_answerable']} questions where a verified source page was among the retrieved chunks |")
     lines.append(f"| Correctness (LLM judge, answerable) | {_fmt(summary['correctness_mean'])} | "
                  f"{summary['correctness_full']} full / {summary['correctness_partial']} partial / "
                  f"{summary['correctness_zero']} wrong |")
