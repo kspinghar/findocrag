@@ -80,6 +80,8 @@ Answer to audit:
 
 Split the answer into its distinct factual claims (a figure, a date, a named fact each count as one claim; ignore citation brackets like [Company, p.X]). For each claim, decide whether it is directly supported by the context excerpts. Count conservatively: a claim not traceable to the excerpts is unsupported, even if plausible.
 
+Do NOT count statements of absence as claims, such as "Not stated in the provided documents", "the excerpts do not include X" or "X is not mentioned". They describe what the excerpts lack, not facts about the companies, and cannot be supported by quoting text. Only count positive factual claims. If the answer contains no positive factual claims, report total_claims as 0.
+
 Report total_claims, supported_claims, and list each unsupported claim verbatim."""
 
 
@@ -194,7 +196,9 @@ def load_qa_set(path: Path, allow_unverified: bool) -> list[dict[str, Any]]:
 
 def evaluate_item(item: dict[str, Any]) -> ItemResult:
     question = item["question"]
-    key = _cache_key(config.ANSWER_MODEL, str(config.TOP_K), question)
+    from src.answer import SYSTEM_PROMPT
+    # The answer prompt is part of the key so prompt changes always produce fresh answers.
+    key = _cache_key(config.ANSWER_MODEL, str(config.TOP_K), SYSTEM_PROMPT, question)
 
     def _run() -> dict[str, Any]:
         r = answer(question)
@@ -233,7 +237,7 @@ def evaluate_item(item: dict[str, Any]) -> ItemResult:
     if item["type"] == "answerable" and not res.abstained:
         cj = cached_json_call(
             "correctness",
-            _cache_key(config.JUDGE_MODEL, question, item["reference_answer"], res.answer),
+            _cache_key(config.JUDGE_MODEL, CORRECTNESS_PROMPT, question, item["reference_answer"], res.answer),
             lambda: judge_json(
                 CORRECTNESS_PROMPT.format(question=question,
                                           reference=item["reference_answer"],
@@ -256,14 +260,17 @@ def evaluate_item(item: dict[str, Any]) -> ItemResult:
         )
         gj = cached_json_call(
             "groundedness",
-            _cache_key(config.JUDGE_MODEL, res.answer, str(len(res.chunks))),
+            # Prompt text is part of the key so a prompt change never reuses stale verdicts.
+            _cache_key(config.JUDGE_MODEL, GROUNDEDNESS_PROMPT, res.answer, str(len(res.chunks))),
             lambda: judge_json(
                 GROUNDEDNESS_PROMPT.format(context=context, answer=res.answer),
                 JUDGE_GROUNDEDNESS_SCHEMA,
             ),
         )
-        total = max(gj["total_claims"], 1)
-        out.groundedness = min(gj["supported_claims"], total) / total
+        total = gj["total_claims"]
+        # An answer with no positive factual claims (e.g. a bare statement of
+        # absence) has nothing to ground, so it is not scored rather than scored 0.
+        out.groundedness = (min(gj["supported_claims"], total) / total) if total > 0 else None
         out.unsupported_claims = gj["unsupported"]
         out.citations_total, out.citations_resolvable, out.figure_supported = check_citations(res)
 
@@ -371,7 +378,8 @@ def write_report(results: list[ItemResult], summary: dict[str, Any], qa_path: Pa
                  f"(`{config.JUDGE_MODEL}`, temperature 0, structured JSON output).")
     lines.append("- Citation validity and figure support are purely programmatic checks "
                  "against the chunk page metadata — no model involved.")
-    lines.append("- Abstention is detected by exact match of the configured abstention string.")
+    lines.append("- Abstention is detected when the answer starts with the configured abstention sentence; any explanation after it is judged for groundedness and its citations are checked like any other answer.")
+    lines.append("- Statements of absence (\"X is not stated\") are not counted as claims by the groundedness judge.")
     lines.append("- All LLM calls are cached in `eval/.cache/`; delete it to force a fresh run.")
 
     config.EVAL_REPORT_PATH.write_text("\n".join(lines), encoding="utf-8")
